@@ -38,6 +38,6 @@
   },
   "dependencies": {
     "nan": "^2.14.0",
-    "bindings": "~1.5.0"
+    "bindings": "^1.5.0"
   }
 }

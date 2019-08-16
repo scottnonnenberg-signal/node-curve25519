@@ -8,7 +8,7 @@ var endtime;
 var iterations = 10000;
 console.log('Starting ' + iterations + ' rounds.');
 for (i = 0; i < iterations; i++) {
-    curve.curve(buf1,secretKeyAlice,expectedPublicKeyBob);
+    curve.donna(buf1,secretKeyAlice,expectedPublicKeyBob);
 }
 endtime= new Date().getTime();
 var timediff=endtime-starttime;
