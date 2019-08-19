@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 #include "ge.h"
 #include "curve_sigs.h"
 #include "crypto_sign.h"
@@ -39,9 +40,14 @@ void curve25519_sign(unsigned char* signature_out,
 {
   ge_p3 ed_pubkey_point; /* Ed25519 pubkey point */
   unsigned char ed_keypair[64]; /* privkey followed by pubkey */
-  unsigned char sigbuf[msg_len + 64]; /* working buffer */
+  unsigned char *sigbuf = NULL; /* working buffer */
   unsigned long long sigbuf_out_len = 0;
   unsigned char sign_bit = 0;
+
+  if ((sigbuf = malloc(msg_len + 128)) == 0) {
+    memset(signature_out, 0, 64);
+    return;
+  }
 
   /* Convert the Curve25519 privkey to an Ed25519 keypair */
   memmove(ed_keypair, curve25519_privkey, 32);
@@ -54,7 +60,9 @@ void curve25519_sign(unsigned char* signature_out,
   memmove(signature_out, sigbuf, 64);
 
   /* Encode the sign bit into signature (in unused high bit of S) */
-   signature_out[63] |= sign_bit;
+  signature_out[63] |= sign_bit;
+
+  free(sigbuf);
 }
 
 int curve25519_verify(unsigned char* signature,
@@ -66,8 +74,19 @@ int curve25519_verify(unsigned char* signature,
   fe ed_y;
   unsigned char ed_pubkey[32];
   unsigned long long some_retval;
-  unsigned char verifybuf[msg_len + 64]; /* working buffer */
-  unsigned char verifybuf2[msg_len + 64]; /* working buffer #2 */
+  unsigned char *verifybuf = NULL; /* working buffer */
+  unsigned char *verifybuf2 = NULL; /* working buffer #2 */
+  int result;
+
+  if ((verifybuf = malloc(msg_len + 64)) == 0) {
+    result = -1;
+    goto err;
+  }
+
+  if ((verifybuf2 = malloc(msg_len + 64)) == 0) {
+    result = -1;
+    goto err;
+  }
 
   /* Convert the Curve25519 public key into an Ed25519 public key.  In
      particular, convert Curve25519's "montgomery" x-coordinate into an
@@ -93,5 +112,17 @@ int curve25519_verify(unsigned char* signature,
   memmove(verifybuf+64, msg, msg_len);
 
   /* Then perform a normal Ed25519 verification, return 0 on success */
-  return crypto_sign_open(verifybuf2, &some_retval, verifybuf, 64 + msg_len, ed_pubkey);
+  result = crypto_sign_open(verifybuf2, &some_retval, verifybuf, 64 + msg_len, ed_pubkey);
+
+  err:
+
+  if (verifybuf != NULL) {
+    free(verifybuf);
+  }
+
+  if (verifybuf2 != NULL) {
+    free(verifybuf2);
+  }
+
+  return result;
 }
