@@ -63,5 +63,6 @@ extern "C" NAN_MODULE_INIT(init) {
   Nan::SetMethod(target, "verify", DoVerify);
 }
 
-
-NODE_MODULE(NODE_GYP_MODULE_NAME, init)
+// We want to be v8 context-aware
+//   https://github.com/nodejs/nan/commit/b058fb047d18a58250e66ae831444441c1f2ac7a
+NAN_MODULE_WORKER_ENABLED(NODE_GYP_MODULE_NAME, init)
